@@ -15,6 +15,14 @@ function Profile() {
   const handleUpdateProfile = () => {
      console.log("hi")
   };
+  
+  const handleLogout = () => {
+     //free the session storage and do to logout
+     //sessionstorage("userInfo") and otherInfo
+     sessionStorage.removeItem("userInfo");
+     sessionStorage.removeItem("otherInfo");
+     navigator("/login");
+  };
 
   return (
     <>
@@ -113,6 +121,9 @@ function Profile() {
               handleUpdateProfile}>
               Save Changes
             </Button>
+            <Button variant="secondary" onClick={handleLogout} style={{ marginTop: '10px' , width: "100%"}}>
+	       Logout
+	    </Button>
           </Form>
         </Modal.Body>
       </Modal>
