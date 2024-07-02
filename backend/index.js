@@ -6,6 +6,7 @@ const connectDB = require("./config/connectDB")
 const cors = require("cors")
 const userRoute = require("./routes/userRoute")
 const messageRoute = require("./routes/messageRoute")
+const path = require("path");
 
 //then connect with a mongodb and also setup the env variables
 //configure dotenv
@@ -22,6 +23,22 @@ app.use(cors())
 //prepare the routes
 app.use("/api/user" , userRoute);
 app.use("/api/message" , messageRoute);
+
+// --------------------------deployment------------------------------
+
+const __dirname1 = path.resolve();
+
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.join(__dirname1, "/frontend/build")));
+
+  app.get("*", (req, res) =>
+    res.sendFile(path.resolve(__dirname1, "frontend", "build", "index.html"))
+  );
+} else {
+  app.get("/", (req, res) => {
+    res.send("API is running..");
+  });
+}
 
 //start the server
 const server = app.listen(process.env.PORT , () => {console.log(`Server started at ${process.env.PORT}`)})
