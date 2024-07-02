@@ -31,8 +31,10 @@ app.use(cors(corsOptions));
 app.use("/api/user" , userRoute);
 app.use("/api/message" , messageRoute);
 
+//port
+const portNo = process.env.PORT || 10000;
 //start the server
-const server = app.listen(process.env.PORT , () => {console.log(`Server started at ${process.env.PORT}`)})
+const server = app.listen( portNo , () => {console.log(`Server started at ${portNo}`)})
 
 // --------------------------deployment------------------------------
 
