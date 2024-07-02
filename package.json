@@ -6,7 +6,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node backend/index.js",
-    "build": "npm install && npm install --prefix frontend && npm run build --prefix frontend"
+    "build": "npm install && npm run build --prefix frontend",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "nodemon backend/index.js",
+    "client": "vite"
   },
   "author": "",
   "license": "ISC",
@@ -21,7 +24,11 @@
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.7.0",
     "mongoose": "^8.4.1",
-    "nodemon": "^3.1.3",
     "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "vite": "^3.0.0",
+    "concurrently": "^7.2.2",
+    "@vitejs/plugin-react": "^1.0.0"
   }
 }
