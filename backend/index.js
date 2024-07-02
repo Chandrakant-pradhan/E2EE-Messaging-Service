@@ -8,6 +8,7 @@ const userRoute = require("./routes/userRoute")
 const messageRoute = require("./routes/messageRoute")
 const path = require("path");
 
+
 //then connect with a mongodb and also setup the env variables
 //configure dotenv
 dotenv.config()
@@ -24,15 +25,18 @@ app.use(cors())
 app.use("/api/user" , userRoute);
 app.use("/api/message" , messageRoute);
 
+//start the server
+const server = app.listen(process.env.PORT , () => {console.log(`Server started at ${process.env.PORT}`)})
+
 // --------------------------deployment------------------------------
 
 const __dirname1 = path.resolve();
 
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname1, "/frontend/build")));
+  app.use(express.static(path.join(__dirname1, "/frontend/dist")));
 
   app.get("*", (req, res) =>
-    res.sendFile(path.resolve(__dirname1, "frontend", "build", "index.html"))
+    res.sendFile(path.resolve(__dirname1, "frontend", "dist", "index.html"))
   );
 } else {
   app.get("/", (req, res) => {
@@ -40,9 +44,7 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-//start the server
-const server = app.listen(process.env.PORT , () => {console.log(`Server started at ${process.env.PORT}`)})
-
+// --------------------------deployment------------------------------
 
 const io = require("socket.io")(server, {
     pingTimeout : 6000,
@@ -82,3 +84,4 @@ io.on("connection", (socket) => {
       socket.leave(userData._id);
     });
   });
+
