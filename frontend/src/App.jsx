@@ -4,8 +4,7 @@ import Homepage from './pages/Homepage';
 import Chatpage from './pages/Chatpage';
 import Login from './components/Authentication/Login';
 import Signup from './components/Authentication/Signup';
-import axios from 'axios';
-axios.defaults.baseURL = `http://localhost:8000`
+
 
 function App() {
   return (
