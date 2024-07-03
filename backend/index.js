@@ -21,7 +21,7 @@ const app = express()
 app.use(express.json())
 
 const corsOptions ={
-    origin:'https://e2ee-messaging-service.onrender.com/', 
+    origin:'http://localhost:8000', 
     credentials:true,            //access-control-allow-credentials:true
     optionSuccessStatus:200
 }
