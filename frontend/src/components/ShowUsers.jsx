@@ -149,7 +149,7 @@ function ShowUsers() {
                   user={user}
                   handleFunction={async () => { 
                     setTalkingUser(user)
-                    accessChat(user)
+                    accessChat(user._id)
                   }}
                 />
               ))
