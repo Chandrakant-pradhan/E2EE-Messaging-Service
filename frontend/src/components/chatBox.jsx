@@ -64,8 +64,16 @@ function Chatbox() {
       const sharedKey = await sharedKeyGenerator(receiverPublicKeyJSON, senderPrivateKeyJSON);
 
       const encrytedMessage = await encryptData(newMessage, sharedKey);
+      
+      let MessageToBeSent = "";
+      if(talkingUser.email === "chatbot@gmail.com"){
+         MessageToBeSent = newMessage;
+      }
+      else{
+        MessageToBeSent = encrytedMessage;
+      }
 
-      const { data } = await axios.post(`/api/message/${talkingUser._id}`, { content: encrytedMessage }, config);
+      const { data } = await axios.post(`/api/message/${talkingUser._id}`, { content: MessageToBeSent}, config);
       // Ensure that the new message object includes all necessary properties
       setMessages([...messages, data]);
       const otherInfo = JSON.parse(sessionStorage.getItem("otherInfo"));
@@ -123,7 +131,7 @@ function Chatbox() {
                       <div key={message._id}>
                         <div className='d-flex justify-content-space-between'>
                           <strong>{message.sender.name} : </strong>{message.content}
-                          {!message.decrypted && (<Button
+                          {(talkingUser.email !== "chatbot@gmail.com") && (<Button
                             variant="dark"
                             size="sm"
                             onClick={async () => {
