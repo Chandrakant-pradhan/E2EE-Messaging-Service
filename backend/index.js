@@ -7,29 +7,24 @@ const cors = require("cors")
 const userRoute = require("./routes/userRoute")
 const messageRoute = require("./routes/messageRoute")
 const path = require("path");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const {Message} = require("./models/message")
 
-
-//then connect with a mongodb and also setup the env variables
-//configure dotenv
 dotenv.config()
 connectDB(process.env.MONGO_URL)
 
 //building the server
 const app = express()
 
+
 //need some middlewares express.json and cors
 app.use(express.json())
-
-const corsOptions ={
-    origin:'https://e2ee-messaging-service.onrender.com', 
-    credentials:true,            //access-control-allow-credentials:true
-    optionSuccessStatus:200
-}
-app.use(cors(corsOptions));
+app.use(cors());
 
 //prepare the routes
 app.use("/api/user" , userRoute);
 app.use("/api/message" , messageRoute);
+
 
 //port
 const portNo = process.env.PORT || 10000;
@@ -52,7 +47,7 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// --------------------------deployment------------------------------
+// --------------------------socket connection------------------------------
 
 const io = require("socket.io")(server, {
     pingTimeout : 6000,
@@ -60,6 +55,20 @@ const io = require("socket.io")(server, {
       origin: "http://localhost:5173",
     },
 });
+
+//-----------CODE FOR GEN AI-----------------------------
+const genAI = new GoogleGenerativeAI(process.env.CHAT_API_KEY);
+
+const run = async(prompt) => {
+ 
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash"});
+
+  const small = `ans only under 10 words only ${prompt}`
+  const result = await model.generateContent(small);
+  const response = result.response;
+  const text = response.text();
+  return text;
+}
 
 io.on("connection", (socket) => {
     console.log("Connected to socket.io");
@@ -70,26 +79,41 @@ io.on("connection", (socket) => {
       socket.emit("connected");
     });
   
-    socket.on('sendMessage', (message, callback) => {
-
-        const room = io.sockets.adapter.rooms.get(message.receiver._id);
-    
-        if (!room) {
-          return callback({ error: 'Room does not exist' });
-        }
-    
-        socket.in(message.receiver._id).emit('newMessage', message, (error) => {
-          if (error) {
-            return callback({ error: 'Message not sent' });
-          }
+    socket.on('sendMessage', async (message, callback) => {
+        
+      if(message.receiver.email === "chatbot@gmail.com"){
+         const msg = await run(message.content);
+         const AImessage = await Message.create({
+          content: msg,
+          sender: message.receiver._id,
+          receiver: message.sender._id,
         });
-    
-        callback({ success: 'Message sent' });
-      });
+
+        const populatedMessage = await AImessage.populate([
+          { path: 'sender', select: '-password' },
+          { path: 'receiver', select: '-password' }
+        ]);
+
+         socket.emit('newMessage', populatedMessage, (error) => {
+              if (error) {
+                return callback({ error: 'Message not sent' });
+              }
+          });
+          callback({ success: 'Message sent' });
+      }
+        else{
+          socket.in(message.receiver._id).emit('newMessage', message, (error) => {
+              if (error) {
+                return callback({ error: 'Message not sent' });
+              }
+            });
+            callback({ success: 'Message sent' });
+        }
+        
+    });
   
     socket.off("setup", () => {
       console.log("USER DISCONNECTED");
       socket.leave(userData._id);
     });
   });
-
