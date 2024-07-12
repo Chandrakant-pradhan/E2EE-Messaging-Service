@@ -49,6 +49,11 @@ function Chatbox() {
 
   const sendMessage = async (event) => {
     event.preventDefault();
+     if (!sessionStorage.getItem("privateKey")) {
+      setErrorMessage('Missing Private key please enter it');
+      setShowFailureToast(true);
+      setShowModal(true);
+    }
     try {
       const config = {
         headers: {
