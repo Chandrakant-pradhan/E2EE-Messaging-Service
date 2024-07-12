@@ -1,10 +1,10 @@
 import './App.css'
 import { Routes, Route  } from 'react-router-dom';
-import Homepage from './pages/Homepage';
 import Chatpage from './pages/Chatpage';
 import Login from './components/Authentication/Login';
 import Signup from './components/Authentication/Signup';
-
+import FaceLogin from './components/Authentication/FaceLogin';
+import { Navigate } from 'react-router-dom';
 
 function App() {
   return (
@@ -16,6 +16,8 @@ function App() {
             <Route  path="/chats" element={<Chatpage />} />
             <Route  path="/" element={<Login />} />
             <Route  path="/signup" element={<Signup />} />
+            <Route  path='/face' element={<FaceLogin/>}/>
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </div>
       </div>
