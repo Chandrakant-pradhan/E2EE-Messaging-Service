@@ -1,11 +1,12 @@
 const express = require("express");
 const {
   authenticateUser ,
+  authenticateUserFace,
   signup ,
   allUser, 
   updateUser , 
   removeUser , 
-  searchUser
+  searchUser 
 } = require("../controllers/userController")
 
 const {protect} = require("../middleware/authentication")
@@ -13,6 +14,9 @@ const router = express.Router();
 
 //get request in /api/user/login
 router.post("/login" , authenticateUser);
+
+//get request in /api/user/face-login
+router.post("/face-login" , authenticateUserFace);
 
 //post request in /api/user/signup
 router.post("/signup" , signup);
