@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema({
   publicKey: {
     type: String,
   },
+  faceFeatures:{
+    type: [Number],
+    required:true,
+  },
 });
 
 // Before saving the instance, hash the password
