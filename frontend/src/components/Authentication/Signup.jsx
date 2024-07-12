@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Form, Container, Toast, ToastContainer, Modal } from 'react-bootstrap';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import * as faceapi from 'face-api.js';
 import { keyGenerator } from '../../utils/security';
 
 function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [image, setImage] = useState(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [showFailureToast, setShowFailureToast] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -15,35 +17,79 @@ function Signup() {
   const [privateKeyJwk, setPrivateKeyJwk] = useState(null);
   const navigate = useNavigate();
 
+  const loadModels = async () => {
+      await faceapi.nets.ssdMobilenetv1.loadFromUri('/models');
+      await faceapi.nets.faceLandmark68Net.loadFromUri('/models');
+      await faceapi.nets.faceRecognitionNet.loadFromUri('/models');
+  };
+   
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && (file.type === 'image/jpeg' || file.type === 'image/png')) {
+      setImage(file);
+    } else {
+      setShowFailureToast(true);
+      setErrorMessage('Please upload a valid JPEG or PNG image.');
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (!image) {
+      setShowFailureToast(true);
+      setErrorMessage('Please upload an image');
+      return;
+    }
+
     try {
-      const config = {
-        headers: {
-          "Content-type": "application/json",
-        },
+      await loadModels();
+      const reader = new FileReader();
+      reader.readAsDataURL(image);
+      reader.onloadend = async () => {
+        const img = await faceapi.fetchImage(reader.result);
+        const faceAIData = await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();
+
+        if(faceAIData.length > 1){
+          setShowFailureToast(true);
+          setErrorMessage('More than one face detected');
+          return;
+        }
+        else if(faceAIData.length == 0){
+          setShowFailureToast(true);
+          setErrorMessage('No face detected');
+          return;
+        }
+
+        // Generate public and private key
+        const faceFeatures = Array.from(faceAIData[0].descriptor);
+
+        const { publicKeyJwk, privateKeyJwk } = await keyGenerator();
+        setPrivateKeyJwk(privateKeyJwk);
+        const PublicKeyString = JSON.stringify(publicKeyJwk);
+
+        // // Make the axios call
+        const config = {
+          headers: {
+            "Content-type": "application/json",
+          },
+        };
+
+        const { data } = await axios.post(
+          "/api/user/signup",
+          { name, email, password, faceFeatures, PublicKeyString },
+          config
+        );
+
+        // // Store private key in sessionStorage
+        sessionStorage.setItem("privateKey", JSON.stringify(privateKeyJwk));
+        setShowSuccessToast(true);
+        setShowModal(true);
       };
-
-      // Generate public and private key
-      const { publicKeyJwk, privateKeyJwk } = await keyGenerator();
-      setPrivateKeyJwk(privateKeyJwk);
-      const PublicKeyString = JSON.stringify(publicKeyJwk);
-
-      const { data } = await axios.post(
-        "/api/user/signup",
-        { name, email, password, PublicKeyString },
-        config
-      );
-
-      // Store private key in localStorage
-      sessionStorage.setItem("privateKey", JSON.stringify(privateKeyJwk));
-      setShowSuccessToast(true);
-      setShowModal(true);
-
     } catch (error) {
       if (error.response && error.response.data && error.response.data.error) {
         setErrorMessage(error.response.data.error);
       } else {
+        console.log(error);
         setErrorMessage("Unknown error occurred. Please try again.");
       }
       setShowFailureToast(true);
@@ -92,7 +138,7 @@ function Signup() {
           />
         </Form.Group>
 
-        <Form.Group className="mb-4" controlId="formBasicPassword">
+        <Form.Group className="mb-2" controlId="formBasicPassword">
           <Form.Label>Password</Form.Label>
           <Form.Control
             type="password"
@@ -101,6 +147,17 @@ function Signup() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </Form.Group>
+
+        <Form.Group controlId="formFile" className="mb-3">
+          <Form.Label>Image</Form.Label>
+          <Form.Control
+            type="file"
+            accept="image/jpeg, image/png"
+            onChange={handleImageUpload}
+            required
+          />
+        </Form.Group>
+
         <Button type="submit" className="btn btn-dark">
           Submit
         </Button>
