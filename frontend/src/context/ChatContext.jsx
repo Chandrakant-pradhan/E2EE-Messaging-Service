@@ -31,7 +31,9 @@ const ChatProvider = ({children}) => {
     useEffect(()=>{
         const userInfo = JSON.parse(sessionStorage.getItem("userInfo"));
         if(!userInfo){
-          if (location.pathname !== '/' && location.pathname !== '/signup') {
+          if (location.pathname !== '/' && location.pathname !== '/signup'
+            && location.pathname !== '/face'
+          ) {
             navigate("/");
           }
         }
