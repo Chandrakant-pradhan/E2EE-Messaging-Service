@@ -88,6 +88,10 @@ function Login() {
           <a href="/signup" style={{color : "black"}}>
             Don't have an account? Sign up
           </a>
+          <br/>
+          <a href="/face" style={{color : "black"}}>
+            Want face login? 
+          </a>
         </div>
         <Button type="submit" className="btn btn-dark">
           Submit
