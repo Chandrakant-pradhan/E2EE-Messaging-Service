@@ -2,15 +2,10 @@ const { tokenGenerator } = require("../config/tokenGenerator");
 const { User, validateUser } = require("../models/user");
 
 const authenticateUser = async (req, res) => {
-    //before login you genereate public and private keys in the frontend
-    //then save the public key in the backend so that you can access public keys 
-    //of other users
     const { email, password} = req.body;
-
     if (!email || !password) {
         return res.status(400).send({ error: "Fill all fields" });
     }
-
     try {
         const user = await User.findOne({ email });
         if (user && user.matchPassword(password)) {
@@ -22,6 +17,7 @@ const authenticateUser = async (req, res) => {
                 profileURL: user.profileURL,
                 publicKey: user.publicKey,
                 isAdmin: user.isAdmin,
+                faceFeatures : user.faceFeatures,
                 token: tokenGenerator({ email: user.email }),
             });
         } else {
@@ -32,14 +28,48 @@ const authenticateUser = async (req, res) => {
     }
 };
 
+const authenticateUserFace = async (req , res) => {
+    const { faceFeatures } = req.body;
+    try {
+        const results = await User.aggregate([
+            {
+                $vectorSearch: {
+                    index: "vector_index", 
+                    path: "faceFeatures",
+                    queryVector: faceFeatures,
+                    numCandidates: 1, 
+                    limit: 1 
+                }
+            }
+        ]);
+
+        if (results.length > 0) {
+            const user = results[0];
+            res.status(200).send({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                bio: user.bio,
+                profileURL: user.profileURL,
+                publicKey: user.publicKey,
+                faceFeatures : user.faceFeatures,
+                isAdmin: user.isAdmin,
+                token: tokenGenerator({ email: user.email }),
+            });
+        } else {
+            res.status(404).send({ error: "User not found" });
+        }
+    } catch (error) {
+        console.error("Error during login:", error);
+        res.status(500).send({ error: "Failed to search embedding" });
+    }
+}
+
 const signup = async (req, res) => {
-
-    const { name, email, password  , PublicKeyString} = req.body;
-
-    if (!name || !email || !password) {
+    const { name, email, password ,faceFeatures,PublicKeyString} = req.body;
+    if (!name || !email || !password || !faceFeatures) {
         return res.status(400).send({ error: "Fill all fields" });
     }
-
     try {
         const usernameTaken = await User.findOne({ name });
         if (usernameTaken) {
@@ -54,6 +84,7 @@ const signup = async (req, res) => {
             name,
             email,
             password,
+            faceFeatures,
             publicKey : PublicKeyString
         });
 
@@ -64,6 +95,7 @@ const signup = async (req, res) => {
                 email: user.email,
                 bio: user.bio,
                 profileURL: user.profileURL,
+                faceFeatures : user.faceFeatures,
                 isAdmin: user.isAdmin,
                 token: tokenGenerator({ email: user.email }),
             });
@@ -104,6 +136,7 @@ const updateUser = async (req, res) => {
                 bio: user.bio,
                 profileURL: user.profileURL,
                 publicKey: user.publicKey,
+                faceFeatures : user.faceFeatures,
                 isAdmin: user.isAdmin,
                 token: tokenGenerator({ email: user.email }),
             });
@@ -144,6 +177,7 @@ const searchUser = async (req, res) => {
 
 module.exports = {
     authenticateUser,
+    authenticateUserFace,
     signup,
     allUser,
     updateUser,
